@@ -23,3 +23,6 @@ If you fill the above text boxes with the required data and submit the form, the
 
 ## IMPORTANT
 Most of the above features are currently road maps and many of them might not have been implemenented as of now but check back soon to see the stable version in all its glory.
+
+## Demo
+You can play around with the demo hosted [here] (http://40.83.125.234/)
