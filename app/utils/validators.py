@@ -5,7 +5,7 @@ class PhoneFormat(object):
 		self.message = message
 
 	def __call__(self, form, field):
-		phone
-		phone = (field.data).strip()
+		phone = field.data
+		phone = phone.strip()
 		if phone[0] != "+":
 			raise ValidationError(self.message)
