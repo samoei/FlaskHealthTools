@@ -1,28 +1,30 @@
 # encoding=utf8
 from flask import render_template, redirect, url_for, current_app, request, flash
-from random import shuffle
 from . import main
 from .forms import SubmissionForm
 from werkzeug.useragents import UserAgent
 from africastalking.AfricasTalkingGateway import (AfricasTalkingGateway as SMSGateway, AfricasTalkingGatewayException as SMSGatewayException)
 from .. import db
-from ..models import Doctor, Qualification, Doc
+from ..models import Doc, QueryLog
 import re
 import csv
 from datetime import datetime
 from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
-import sys, os
+import sys
+import os
 
 reload(sys)
 sys.setdefaultencoding('utf8')
 basedir = os.path.abspath(os.path.dirname(__file__))
+
 
 @main.route('/', methods=['POST', 'GET'])
 def index():
 	form = SubmissionForm()
 	source_ip = request.remote_addr
 	user_agent = UserAgent(request.headers.get('User-Agent'))
+	channel = "form"
 	doctors_count = db.session.query(Doc).count()
 	if form.validate_on_submit():
 
@@ -36,15 +38,30 @@ def index():
 		try:
 			send_reply_sms(phone_no, msg)
 			flash("Messsge sent successfuly")
-		except:
+			log_query(phone_no, query, source_ip, user_agent, channel)
+		except Exception as e:
 			flash("An Error Occured")
+			raise e
 		return redirect(url_for('.index'))
 
 	return render_template('index.html', form=form, doctors_count=doctors_count)
 
 
+def log_query(phone_no, query, source_ip, user_agent, channel):
+	query_log = QueryLog(phoneNumber=phone_no, query=query, ip_address=source_ip, browser=user_agent.browser, operating_system=user_agent.platform, channel=channel)
+	db.session.add(query_log)
+	try:
+		db.session.commit()
+	except Exception as e:
+		db.session.rollback()
+		raise e
+
+
 @main.route('/sms')
 def sms_query():
+	source_ip = request.remote_addr
+	user_agent = UserAgent(request.headers.get('User-Agent'))
+	channel = "sms-endpoint"
 	if request.args.get('phoneNumber') and request.args.get('message'):
 		phoneNumber = (request.args.get('phoneNumber')).strip()
 		message = (request.args.get('message')).strip()
@@ -53,6 +70,7 @@ def sms_query():
 		try:
 			send_reply_sms(phoneNumber, msg)
 			flash("Messsge sent successfuly")
+			log_query(phoneNumber, message, source_ip, user_agent, channel)
 		except:
 			flash("An Error Occured", "error")
 		return redirect(url_for('.index'))

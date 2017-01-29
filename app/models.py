@@ -1,4 +1,5 @@
 from . import db
+from datetime import datetime
 
 
 class Doctor(db.Model):
@@ -10,6 +11,21 @@ class Doctor(db.Model):
 
     def __repr__(self):
         return '<Doctor %r>' % self.names
+
+
+class QueryLog(db.Model):
+    __tablename__ = 'query_log'
+    id = db.Column(db.Integer, primary_key=True)
+    phoneNumber = db.Column(db.String(20))
+    query = db.Column(db.String(128))
+    ip_address = db.Column(db.String(20))
+    browser = db.Column(db.String(40))
+    operating_system = db.Column(db.String(40))
+    channel = db.Column(db.String(20))
+    query_date = db.Column(db.DateTime(), default=datetime.utcnow)
+
+    def __repr__(self):
+        return '<Query From  %r>' % self.phoneNumber
 
 
 class Doc(db.Model):
