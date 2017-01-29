@@ -43,6 +43,20 @@ def index():
 	return render_template('index.html', form=form, doctors_count=doctors_count)
 
 
+@main.route('/sms')
+def sms_query():
+	phoneNumber = (request.args.get('phoneNumber')).strip()
+	message = (request.args.get('message')).strip()
+	msg = process_query(message)
+	print msg
+	try:
+		send_reply_sms(phoneNumber, msg)
+		flash("Messsge sent successfuly")
+	except:
+		flash("An Error Occured")
+	return redirect(url_for('.index'))
+
+
 @main.route('/load-data')
 def load_data():
 	file_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'scraper/items.csv'))
