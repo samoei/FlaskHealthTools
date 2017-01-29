@@ -12,6 +12,20 @@ class Doctor(db.Model):
         return '<Doctor %r>' % self.names
 
 
+class Doc(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    names = db.Column(db.String(128))
+    reg_date = db.Column(db.Date)
+    reg_no = db.Column(db.String(10), unique=True)
+    address = db.Column(db.String(128))
+    qualifications = db.Column(db.String(100))
+    specialty = db.Column(db.String(100))
+    sub_speciality = db.Column(db.String(100))
+
+    def __repr__(self):
+        return '<Doctor %r>' % self.names
+
+
 class Qualification(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)

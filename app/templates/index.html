@@ -98,13 +98,7 @@
 						</form>
 
 						<hr class="intro-divider">
-						<h4>Random sample of doctors in the database</h4>
-
-						{% for doc in doctors[:4] %}
-							<p>{{doc.names}}</p>
-						{% endfor %}
-
-						<a href="{{ url_for('main.index') }}" class="btn btn-primary">Refresh</a>
+						<h4>{{ "{:,.0f}".format(doctors_count) }} Doctors Currently Indexed</h4>
 
 
 

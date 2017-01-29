@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
-
-# Define here the models for your scraped items
-#
-# See documentation in:
-# http://doc.scrapy.org/en/latest/topics/items.html
-
 import scrapy
 
 
-class ScraperItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class DocsItem(scrapy.Item):
+	name = scrapy.Field()
+	reg_date = scrapy.Field()
+	reg_no = scrapy.Field()
+	address = scrapy.Field()
+	qualifications = scrapy.Field()
+	specialty = scrapy.Field()
+	sub_speciality = scrapy.Field()

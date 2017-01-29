@@ -44,3 +44,6 @@ venv
 
 # Redis
 dump.rdb
+
+# Database Migrations
+migrations

@@ -1,7 +1,10 @@
+import os, sys
 from flask import Flask
 from config import config
 from flask_sqlalchemy import SQLAlchemy
 
+sys.path.append(os.path.join(os.path.dirname(__file__), '../..'))
+print os.getcwd()
 
 db = SQLAlchemy()
 
