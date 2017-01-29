@@ -22,7 +22,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 @main.route('/', methods=['POST', 'GET'])
 def index():
 	form = SubmissionForm()
-	source_ip = request.remote_addr
+	# source_ip = request.remote_addr
+	source_ip = request.environ['REMOTE_ADDR']
 	user_agent = UserAgent(request.headers.get('User-Agent'))
 	channel = "form"
 	doctors_count = db.session.query(Doc).count()
@@ -59,7 +60,8 @@ def log_query(phone_no, query, source_ip, user_agent, channel):
 
 @main.route('/sms')
 def sms_query():
-	source_ip = request.remote_addr
+	# source_ip = request.remote_addr
+	source_ip = request.environ['REMOTE_ADDR']
 	user_agent = UserAgent(request.headers.get('User-Agent'))
 	channel = "sms-endpoint"
 	if request.args.get('phoneNumber') and request.args.get('message'):
