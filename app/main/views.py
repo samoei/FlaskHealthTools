@@ -45,16 +45,20 @@ def index():
 
 @main.route('/sms')
 def sms_query():
-	phoneNumber = (request.args.get('phoneNumber')).strip()
-	message = (request.args.get('message')).strip()
-	msg = process_query(message)
-	print msg
-	try:
-		send_reply_sms(phoneNumber, msg)
-		flash("Messsge sent successfuly")
-	except:
-		flash("An Error Occured")
-	return redirect(url_for('.index'))
+	if request.args.get('phoneNumber') and request.args.get('message'):
+		phoneNumber = (request.args.get('phoneNumber')).strip()
+		message = (request.args.get('message')).strip()
+		msg = process_query(message)
+		print msg
+		try:
+			send_reply_sms(phoneNumber, msg)
+			flash("Messsge sent successfuly")
+		except:
+			flash("An Error Occured", "error")
+		return redirect(url_for('.index'))
+	else:
+		flash("Mandatory parameters missing", 'error')
+		return redirect(url_for('.index'))
 
 
 @main.route('/load-data')
