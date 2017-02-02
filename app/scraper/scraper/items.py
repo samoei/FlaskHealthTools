@@ -10,3 +10,10 @@ class DocsItem(scrapy.Item):
 	qualifications = scrapy.Field()
 	specialty = scrapy.Field()
 	sub_speciality = scrapy.Field()
+
+
+class NhifItem(scrapy.Item):
+	code = scrapy.Field()
+	hospital = scrapy.Field()
+	nhif_branch = scrapy.Field()
+	cover = scrapy.Field()

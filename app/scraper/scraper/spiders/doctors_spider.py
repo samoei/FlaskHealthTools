@@ -1,5 +1,5 @@
 import scrapy
-from scraper.items import DocsItem
+from scraper.items import DocsItem, NhifItem
 
 
 class DocsSpider(scrapy.Spider):
@@ -37,3 +37,26 @@ class DocsSpider(scrapy.Spider):
 			next_page = response.urljoin(next_page)
 			print "############ WORKING ON PAGE: {}".format(next_page)
 			yield scrapy.Request(next_page, callback=self.parse)
+
+class NhifSpider(scrapy.Spider):
+	name = 'nhif_spider'
+	start_urls = ['http://www.nhif.or.ke/healthinsurance/medicalFacilities']
+	allowed_domains = ['http://www.nhif.or.ke']
+
+	def parse(self, response):
+		base_xpath = '//div[contains(@class,"panel") and contains(@class, "panel-default")]'
+		for region in response.xpath(base_xpath):
+			region_base = './div[contains(@class,"panel-collapse") and contains(@class, "collapse")]/div[@class="panel-body"]/div[@class="tabs-section"]/div[@class="tab-content"]/div[contains(@class,"tab-pane") and contains(@class, "fade")]/div[@class="row"]//table/tbody/tr'
+			for r_base in region.xpath(region_base):
+				nhif_item = NhifItem()
+				code = './/td[1]/text()'
+				hospital = './/td[2]/text()'
+				nhif_branch = './/td[3]/text()'
+				cover = './/td[4]/text()'
+
+				nhif_item['code'] = r_base.xpath(code).extract()
+				nhif_item['hospital'] = r_base.xpath(hospital).extract()
+				nhif_item['nhif_branch'] = r_base.xpath(nhif_branch).extract()
+				nhif_item['cover'] = r_base.xpath(cover).extract()
+
+				yield nhif_item

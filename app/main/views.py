@@ -5,7 +5,7 @@ from .forms import SubmissionForm
 from werkzeug.useragents import UserAgent
 from africastalking.AfricasTalkingGateway import (AfricasTalkingGateway as SMSGateway, AfricasTalkingGatewayException as SMSGatewayException)
 from .. import db
-from ..models import Doc, QueryLog
+from ..models import Doc, QueryLog, Nhif
 import re
 import csv
 from datetime import datetime
@@ -29,6 +29,7 @@ def index():
 	user_agent = UserAgent(request.headers.get('User-Agent'))
 	channel = "form"
 	doctors_count = db.session.query(Doc).count()
+	nhif_count = db.session.query(Nhif).count()
 	if form.validate_on_submit():
 
 		# Extract the phone_number from the form
@@ -47,7 +48,7 @@ def index():
 			raise e
 		return redirect(url_for('.index'))
 
-	return render_template('index.html', form=form, doctors_count=doctors_count)
+	return render_template('index.html', form=form, doctors_count=doctors_count, nhif_count=nhif_count)
 
 
 def log_query(phone_no, query, source_ip, user_agent, channel):
@@ -114,28 +115,79 @@ def load_data():
 	return redirect(url_for('.index'))
 
 
+@main.route('/load-nhifdata')
+def load_nhifdata():
+	file_path = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'scraper/nhif.csv'))
+	with open(file_path, 'rb') as f:
+		reader = csv.reader(f)
+		reader.next()
+		for row in reader:
+			nhif = Nhif()
+			nhif.hospital =  unicode((row[0]).strip())
+			nhif.code = (row[1]).strip()
+			nhif.cover = (row[2]).strip()
+			nhif.location = (row[3]).strip()
+			db.session.add(nhif)
+			try:
+
+				db.session.commit()
+			except IntegrityError:
+				pass
+			except InvalidRequestError:
+				db.session.rollback()
+			except Exception:
+				db.session.rollback()
+	return redirect(url_for('.index'))
+
+
 def process_query(query):
 	# Clean Query
 	cleaned_query = clean_query(query)
 
 	# Get Doctors
 	docs_found = []
+	nhif_found = []
 	docs = db.session.query(Doc).all()
+	nhif_data = db.session.query(Nhif).all()
 	terms = cleaned_query
 
-	# Search for docs and construct a message
-	for doc in docs:
-		if len(docs_found) < 4:
-			if findWholeWord(terms)(doc.names):
-				docs_found.append(doc)
+	# Start with nhif/location based query
+	for nhif in nhif_data:
+		if len(nhif_found) < 5:
+			if findWholeWord(terms)(nhif.location):
+				nhif_found.append(nhif)
 		else:
 			break
-	return construct_message(docs_found)
+	if len(nhif_found) > 0:
+		return construct_nhif_message(nhif_found)
+	else:
+		# Search for docs and construct a message
+		for doc in docs:
+			if len(docs_found) < 4:
+				if findWholeWord(terms)(doc.names):
+					docs_found.append(doc)
+			else:
+				break
+		return construct_message(docs_found)
+
+
+def construct_nhif_message(docs_list):
+	count = 1
+	msg_items = []
+
+	for nhif in docs_list:
+		status = "".join([str(count), ".", nhif.hospital])
+		count = count + 1
+		msg_items.append(status)
+	if len(docs_list) == 5:
+		msg_items.append("Find the full list at http://health.the-star.co.ke")
+
+	return "\n".join(msg_items)
 
 
 def construct_message(docs_list):
 	if len(docs_list) < 1:
-		return "Could not find a doctor with that name"
+		return "Could not find a doctor with that name or the location you provided is currently not served by an NHIF accredited hospital"
 
 	count = 1
 	msg_items = []

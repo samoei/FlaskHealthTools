@@ -42,6 +42,17 @@ class Doc(db.Model):
         return '<Doctor %r>' % self.names
 
 
+class Nhif(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(30), unique=True)
+    hospital = db.Column(db.String(128))
+    location = db.Column(db.String(30))
+    cover = db.Column(db.String(30))
+
+    def __repr__(self):
+        return '<NHIF %r>' % self.hospital
+
+
 class Qualification(db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
