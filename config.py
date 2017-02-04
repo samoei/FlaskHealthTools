@@ -9,6 +9,7 @@ class Config:
     DOCTORS_SEARCH_URL = os.environ.get('DOCTORS_SEARCH_URL')
     NURSE_SEARCH_URL = os.environ.get('NURSE_SEARCH_URL')
     CO_SEARCH_URL = os.environ.get('CO_SEARCH_URL')
+    SMS_RESULT_COUNT = 5 # Number of results to be send via sms
 
     @staticmethod
     def init_app(app):
@@ -17,7 +18,10 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    SEND_SMS = False
+    APP_CONFIG = 'development'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DEV_DATABASE_URL') or  'sqlite:///' + os.path.join(basedir, 'starhealth-dev.sqlite')
+    print "DATABASE:",SQLALCHEMY_DATABASE_URI
 
 
 class TestingConfig(Config):
@@ -26,8 +30,9 @@ class TestingConfig(Config):
 
 
 class ProductionConfig(Config):
-    pass
-
+    SEND_SMS = True
+    APP_CONFIG = 'production'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('PROD_DATABASE_URL')
 
 config = {
     'development': DevelopmentConfig,

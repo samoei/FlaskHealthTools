@@ -63,12 +63,15 @@ def log_query(phone_no, query, source_ip, user_agent, channel):
 		db.session.rollback()
 		raise e
 
+
 @main.route('/sms')
 def sms_query():
 	if request.args.get('phoneNumber') and request.args.get('message'):
 		phoneNumber = (request.args.get('phoneNumber')).strip()
 		message = (request.args.get('message')).strip()
 		msg = build_query_response(message)
+		if current_app.config['SEND_SMS']:
+			send_reply_sms(phoneNumber, msg[0])
 		return jsonify(msg)
 	return "Missing Url Parameters"
 
@@ -204,21 +207,26 @@ def build_query_response(query):
 		msg_items.append("Example query for nurse officers: NO SAMUEL AMAI")
 		msg = " ".join(msg_items)
 		print msg
-		return {'error':" ".join(msg_items)}
+		return [msg, {'error':" ".join(msg_items)}]
 
 	print msg
-	return r.json()
+	return [msg, r.json()]
 
 def parse_cloud_search_results(response):
 	result_list = []
+	result_to_send_count = current_app.config['SMS_RESULT_COUNT']
 	data_dict = response.json()
 	fields_dict = (data_dict['hits'])
 	hits = fields_dict['hit']
-	# print type(hits)
 	result_list = []
+	search_results_count = len(hits)
+	print "FOUND {} RESULTS".format(search_results_count)
 	for item in hits:
 		result = item['fields']
-		result_list.append(result)
+		if len(result_list) < result_to_send_count:
+			result_list.append(result)
+		else:
+			break
 	return result_list
 
 
@@ -293,21 +301,11 @@ def construct_co_response(co_list):
 		return "Could not find a clinical officer with that name"
 	count = 1
 	msg_items = []
-	if len(co_list) > 5:
-		for co in co_list:
-			if count < 6:
-				status = " ".join([str(count), co['name'], "-", co['qualification']])
-				msg_items.append(status)
-				count = count + 1
-	else:
-		for co in co_list:
+	for co in co_list:
 			status = " ".join([str(count), co['name'], "-", co['qualification']])
 			msg_items.append(status)
 			count = count + 1
-
-
-
-	if len(co_list) > 5:
+	if len(co_list) == 5:
 		msg_items.append("Find the full list at http://health.the-star.co.ke")
 	print "\n".join(msg_items)
 	return "\n".join(msg_items)
@@ -321,10 +319,10 @@ def construct_nurse_response(nurse_list):
 	count = 1
 	msg_items = []
 	for nurse in nurse_list:
-		status = " ".join([str(count), nurse['name'], "VALID UNTILL", nurse['valid_until']])
+		status = " ".join([str(count)+".", nurse['name']+",", "VALID TO", nurse['valid_until']])
 		msg_items.append(status)
 		count = count + 1
-	if len(nurse_list) == 4:
+	if len(nurse_list) == 5:
 		msg_items.append("Find the full list at http://health.the-star.co.ke")
 
 	return "\n".join(msg_items)
