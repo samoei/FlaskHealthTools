@@ -6,6 +6,9 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
     SMS_PROVIDER_USERNAME = os.environ.get('SMS_PROVIDER_USERNAME')
     SMS_PROVIDER_KEY = os.environ.get('SMS_PROVIDER_KEY')
+    DOCTORS_SEARCH_URL = os.environ.get('DOCTORS_SEARCH_URL')
+    NURSE_SEARCH_URL = os.environ.get('NURSE_SEARCH_URL')
+    CO_SEARCH_URL = os.environ.get('CO_SEARCH_URL')
 
     @staticmethod
     def init_app(app):

@@ -1,5 +1,5 @@
 # encoding=utf8
-from flask import render_template, redirect, url_for, current_app, request, flash
+from flask import render_template, redirect, url_for, current_app, request, flash, jsonify
 from . import main
 from .forms import SubmissionForm
 from werkzeug.useragents import UserAgent
@@ -13,6 +13,9 @@ from sqlalchemy.exc import IntegrityError, InvalidRequestError
 
 import sys
 import os
+import urllib2
+import json
+import requests
 
 reload(sys)
 sys.setdefaultencoding('utf8')
@@ -60,31 +63,40 @@ def log_query(phone_no, query, source_ip, user_agent, channel):
 		db.session.rollback()
 		raise e
 
-
 @main.route('/sms')
 def sms_query():
-	# source_ip = request.remote_addr
-	if request.headers.getlist("X-Forwarded-For"):
-		source_ip = request.headers.getlist("X-Forwarded-For")[0]
-	else:
-		source_ip = request.environ['REMOTE_ADDR']
-	user_agent = UserAgent(request.headers.get('User-Agent'))
-	channel = "sms-endpoint"
 	if request.args.get('phoneNumber') and request.args.get('message'):
 		phoneNumber = (request.args.get('phoneNumber')).strip()
 		message = (request.args.get('message')).strip()
-		msg = process_query(message)
-		print msg
-		try:
-			send_reply_sms(phoneNumber, msg)
-			flash("Messsge sent successfuly")
-			log_query(phoneNumber, message, source_ip, user_agent, channel)
-		except:
-			flash("An Error Occured", "error")
-		return redirect(url_for('.index'))
-	else:
-		flash("Mandatory parameters missing", 'error')
-		return redirect(url_for('.index'))
+		msg = build_query_response(message)
+		return jsonify(msg)
+	return "Missing Url Parameters"
+
+
+# @main.route('/sms')
+# def sms_query():
+# 	# source_ip = request.remote_addr
+# 	if request.headers.getlist("X-Forwarded-For"):
+# 		source_ip = request.headers.getlist("X-Forwarded-For")[0]
+# 	else:
+# 		source_ip = request.environ['REMOTE_ADDR']
+# 	user_agent = UserAgent(request.headers.get('User-Agent'))
+# 	channel = "sms-endpoint"
+# 	if request.args.get('phoneNumber') and request.args.get('message'):
+# 		phoneNumber = (request.args.get('phoneNumber')).strip()
+# 		message = (request.args.get('message')).strip()
+# 		msg = process_query(message)
+# 		print msg
+# 		try:
+# 			send_reply_sms(phoneNumber, msg)
+# 			flash("Messsge sent successfuly")
+# 			log_query(phoneNumber, message, source_ip, user_agent, channel)
+# 		except:
+# 			flash("An Error Occured", "error")
+# 		return redirect(url_for('.index'))
+# 	else:
+# 		flash("Mandatory parameters missing", 'error')
+# 		return redirect(url_for('.index'))
 
 
 @main.route('/load-data')
@@ -138,6 +150,76 @@ def load_nhifdata():
 			except Exception:
 				db.session.rollback()
 	return redirect(url_for('.index'))
+
+
+def build_query_response(query):
+	query = clean_query(query)
+	if query.startswith(u'dr'):
+		end_point = current_app.config['DOCTORS_SEARCH_URL']
+		query = query[2:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_docs_response(parse_cloud_search_results(r))
+	elif query.startswith(u'doctor'):
+		end_point = current_app.config['DOCTORS_SEARCH_URL']
+		query = query[6:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_docs_response(parse_cloud_search_results(r))
+	elif query.startswith(u'doc'):
+		end_point = current_app.config['DOCTORS_SEARCH_URL']
+		query = query[3:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_docs_response(parse_cloud_search_results(r))
+	elif query.startswith(u'nurse'):
+		end_point = current_app.config['NURSE_SEARCH_URL']
+		query = query[5:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_nurse_response(parse_cloud_search_results(r))
+	elif query.startswith(u'no'):
+		end_point = current_app.config['NURSE_SEARCH_URL']
+		query = query[2:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_nurse_response(parse_cloud_search_results(r))
+	elif query.startswith(u'co'):
+		end_point = current_app.config['CO_SEARCH_URL']
+		query = query[2:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_co_response(parse_cloud_search_results(r))
+	elif query.startswith(u'clinical officer'):
+		end_point = current_app.config['CO_SEARCH_URL']
+		query = query[16:].strip()
+		print "QUERY: ",query
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_co_response(parse_cloud_search_results(r))
+	else:
+		msg_items = []
+		msg_items.append("We could not understand your request.")
+		msg_items.append("Example query for doctors: DR SAMUEL AMAI")
+		msg_items.append("Example query for clinical officers: CO SAMUEL AMAI")
+		msg_items.append("Example query for nurse officers: NO SAMUEL AMAI")
+		msg = " ".join(msg_items)
+		print msg
+		return {'error':" ".join(msg_items)}
+
+	print msg
+	return r.json()
+
+def parse_cloud_search_results(response):
+	result_list = []
+	data_dict = response.json()
+	fields_dict = (data_dict['hits'])
+	hits = fields_dict['hit']
+	# print type(hits)
+	result_list = []
+	for item in hits:
+		result = item['fields']
+		result_list.append(result)
+	return result_list
 
 
 def process_query(query):
@@ -205,14 +287,73 @@ def construct_message(docs_list):
 	return " ".join(msg_items)
 
 
-def clean_query(query):
-	query = query.lower().strip()
-	if query.startswith(u'dr'):
-		return query[2:].strip()
-	elif query.startswith(u'doctor'):
-		return query[6:].strip()
+def construct_co_response(co_list):
+	# Just incase we found ourselves here with an empty list
+	if len(co_list) < 1:
+		return "Could not find a clinical officer with that name"
+	count = 1
+	msg_items = []
+	if len(co_list) > 5:
+		for co in co_list:
+			if count < 6:
+				status = " ".join([str(count), co['name'], "-", co['qualification']])
+				msg_items.append(status)
+				count = count + 1
 	else:
-		return query
+		for co in co_list:
+			status = " ".join([str(count), co['name'], "-", co['qualification']])
+			msg_items.append(status)
+			count = count + 1
+
+
+
+	if len(co_list) > 5:
+		msg_items.append("Find the full list at http://health.the-star.co.ke")
+	print "\n".join(msg_items)
+	return "\n".join(msg_items)
+
+
+
+def construct_nurse_response(nurse_list):
+	# Just incase we found ourselves here with an empty list
+	if len(nurse_list) < 1:
+		return "Could not find a nurse with that name"
+	count = 1
+	msg_items = []
+	for nurse in nurse_list:
+		status = " ".join([str(count), nurse['name'], "VALID UNTILL", nurse['valid_until']])
+		msg_items.append(status)
+		count = count + 1
+	if len(nurse_list) == 4:
+		msg_items.append("Find the full list at http://health.the-star.co.ke")
+
+	return "\n".join(msg_items)
+
+
+def construct_docs_response(docs_list):
+	# Just incase we found ourselves here with an empty list
+	if len(docs_list) < 1:
+		return "Could not find a doctor with that name"
+	count = 1
+	msg_items = []
+
+	for doc in docs_list:
+		# Ignore speciality if not there, dont display none
+		if doc['specialty'] == "None":
+			status = " ".join([str(count), doc['name'], "-", doc['registration_number'], "-", doc['qualification']])
+		else:
+			status = " ".join([str(count), doc['name'], "-", doc['registration_number'], "-", doc['qualification'], doc['specialty']])
+		msg_items.append(status)
+		count = count + 1
+	if len(docs_list) == 4:
+		msg_items.append("Find the full list at http://health.the-star.co.ke")
+
+	return "\n".join(msg_items)
+
+
+def clean_query(query):
+	query = query.lower().strip().replace(".","")
+	return query
 
 
 def findWholeWord(w):
