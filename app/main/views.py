@@ -155,50 +155,43 @@ def load_nhifdata():
 	return redirect(url_for('.index'))
 
 
+def find_keyword_in_query(query, keywords):
+	regex = re.compile(r'\b(?:%s)\b' % '|'.join(keywords), re.IGNORECASE)
+	return re.search(regex, query)
+
+
 def build_query_response(query):
 	query = clean_query(query)
-	if query.startswith(u'dr'):
+	docs_keywords = current_app.config['DOC_KEYWORDS']
+	clinicalofficers_keywords = current_app.config['CO_KEYWORDS']
+	nurse_keywords = current_app.config['NO_KEYWORDS']
+	# Start by looking for doctors keywords
+	if find_keyword_in_query(query, docs_keywords):
+		search_terms = find_keyword_in_query(query, docs_keywords)
+		query = query[:search_terms.start()] + query[search_terms.end():]
 		end_point = current_app.config['DOCTORS_SEARCH_URL']
-		query = query[2:].strip()
-		print "QUERY: ",query
 		r = requests.get(end_point, params={'q': query})
 		msg = construct_docs_response(parse_cloud_search_results(r))
-	elif query.startswith(u'doctor'):
-		end_point = current_app.config['DOCTORS_SEARCH_URL']
-		query = query[6:].strip()
-		print "QUERY: ",query
-		r = requests.get(end_point, params={'q': query})
-		msg = construct_docs_response(parse_cloud_search_results(r))
-	elif query.startswith(u'doc'):
-		end_point = current_app.config['DOCTORS_SEARCH_URL']
-		query = query[3:].strip()
-		print "QUERY: ",query
-		r = requests.get(end_point, params={'q': query})
-		msg = construct_docs_response(parse_cloud_search_results(r))
-	elif query.startswith(u'nurse'):
+		print msg
+		return [msg, r.json()]
+	# Looking for Nurses keywords
+	elif find_keyword_in_query(query, nurse_keywords):
+		search_terms = find_keyword_in_query(query, nurse_keywords)
+		query = query[:search_terms.start()] + query[search_terms.end():]
 		end_point = current_app.config['NURSE_SEARCH_URL']
-		query = query[5:].strip()
-		print "QUERY: ",query
 		r = requests.get(end_point, params={'q': query})
 		msg = construct_nurse_response(parse_cloud_search_results(r))
-	elif query.startswith(u'no'):
-		end_point = current_app.config['NURSE_SEARCH_URL']
-		query = query[2:].strip()
-		print "QUERY: ",query
-		r = requests.get(end_point, params={'q': query})
-		msg = construct_nurse_response(parse_cloud_search_results(r))
-	elif query.startswith(u'co'):
+		print msg
+		return [msg, r.json()]
+	# Looking for clinical officers Keywords
+	elif find_keyword_in_query(query, clinicalofficers_keywords):
+		search_terms = find_keyword_in_query(query, clinicalofficers_keywords)
+		query = query[:search_terms.start()] + query[search_terms.end():]
 		end_point = current_app.config['CO_SEARCH_URL']
-		query = query[2:].strip()
-		print "QUERY: ",query
 		r = requests.get(end_point, params={'q': query})
 		msg = construct_co_response(parse_cloud_search_results(r))
-	elif query.startswith(u'clinical officer'):
-		end_point = current_app.config['CO_SEARCH_URL']
-		query = query[16:].strip()
-		print "QUERY: ",query
-		r = requests.get(end_point, params={'q': query})
-		msg = construct_co_response(parse_cloud_search_results(r))
+		print msg
+		return [msg, r.json()]
 	else:
 		msg_items = []
 		msg_items.append("We could not understand your request.")
@@ -208,9 +201,6 @@ def build_query_response(query):
 		msg = " ".join(msg_items)
 		print msg
 		return [msg, {'error':" ".join(msg_items)}]
-
-	print msg
-	return [msg, r.json()]
 
 def parse_cloud_search_results(response):
 	result_list = []
