@@ -10,7 +10,7 @@ class Config:
     NURSE_SEARCH_URL = os.environ.get('NURSE_SEARCH_URL')
     CO_SEARCH_URL = os.environ.get('CO_SEARCH_URL')
     SMS_RESULT_COUNT = 5 # Number of results to be send via sms
-    DOC_KEYWORDS = ['doc', 'daktari', 'doctor', 'oncologist', 'dr', 'mganga']
+    DOC_KEYWORDS = ['doc', 'daktari', 'doctor', 'oncologist', 'dr']
     CO_KEYWORDS = ['CO', 'clinical officer','clinic officer']
     NO_KEYWORDS = ['nurse', 'no', 'nursing officer', 'mhuguzi', 'RN', 'Registered Nurse'] # Nurses Keywords
 

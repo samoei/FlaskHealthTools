@@ -192,6 +192,7 @@ def build_query_response(query):
 		msg = construct_co_response(parse_cloud_search_results(r))
 		print msg
 		return [msg, r.json()]
+	# If we miss the keywords then reply with the prefered query formats
 	else:
 		msg_items = []
 		msg_items.append("We could not understand your request.")
