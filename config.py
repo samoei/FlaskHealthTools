@@ -9,10 +9,14 @@ class Config:
     DOCTORS_SEARCH_URL = os.environ.get('DOCTORS_SEARCH_URL')
     NURSE_SEARCH_URL = os.environ.get('NURSE_SEARCH_URL')
     CO_SEARCH_URL = os.environ.get('CO_SEARCH_URL')
+    NHIF_SEARCH_URL = os.environ.get('NHIF_SEARCH_URL')
+    HF_SEARCH_URL = os.environ.get('HF_SEARCH_URL')
     SMS_RESULT_COUNT = 5 # Number of results to be send via sms
     DOC_KEYWORDS = ['doc', 'daktari', 'doctor', 'oncologist', 'dr']
     CO_KEYWORDS = ['CO', 'clinical officer','clinic officer']
     NO_KEYWORDS = ['nurse', 'no', 'nursing officer', 'mhuguzi', 'RN', 'Registered Nurse'] # Nurses Keywords
+    NHIF_KEYWORDS = ['nhif', 'bima', 'insurance', 'insurance fund', 'health insurance', 'hospital fund'] # Nurses Keywords
+    HF_KEYWORDS = ['hf', 'hospital', 'dispensary', 'clinic', 'hospitali', 'sanatorium', 'health centre'] # Nurses Keywords
 
 
     @staticmethod

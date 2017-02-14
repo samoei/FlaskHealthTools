@@ -165,6 +165,8 @@ def build_query_response(query):
 	docs_keywords = current_app.config['DOC_KEYWORDS']
 	clinicalofficers_keywords = current_app.config['CO_KEYWORDS']
 	nurse_keywords = current_app.config['NO_KEYWORDS']
+	nhif_keywords = current_app.config['NHIF_KEYWORDS']
+	hf_keywords = current_app.config['HF_KEYWORDS'] # Health facilities keywords
 	# Start by looking for doctors keywords
 	if find_keyword_in_query(query, docs_keywords):
 		search_terms = find_keyword_in_query(query, docs_keywords)
@@ -190,6 +192,24 @@ def build_query_response(query):
 		end_point = current_app.config['CO_SEARCH_URL']
 		r = requests.get(end_point, params={'q': query})
 		msg = construct_co_response(parse_cloud_search_results(r))
+		print msg
+		return [msg, r.json()]
+	# Looking for nhif hospitals
+	elif find_keyword_in_query(query, nhif_keywords):
+		search_terms = find_keyword_in_query(query, nhif_keywords)
+		query = query[:search_terms.start()] + query[search_terms.end():]
+		end_point = current_app.config['NHIF_SEARCH_URL']
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_nhif_response(parse_cloud_search_results(r))
+		print msg
+		return [msg, r.json()]
+	# Looking for health facilities
+	elif find_keyword_in_query(query, hf_keywords):
+		search_terms = find_keyword_in_query(query, hf_keywords)
+		query = query[:search_terms.start()] + query[search_terms.end():]
+		end_point = current_app.config['HF_SEARCH_URL']
+		r = requests.get(end_point, params={'q': query})
+		msg = construct_hf_response(parse_cloud_search_results(r))
 		print msg
 		return [msg, r.json()]
 	# If we miss the keywords then reply with the prefered query formats
@@ -314,6 +334,38 @@ def construct_nurse_response(nurse_list):
 		msg_items.append(status)
 		count = count + 1
 	if len(nurse_list) == 5:
+		msg_items.append("Find the full list at http://health.the-star.co.ke")
+
+	return "\n".join(msg_items)
+
+
+def construct_hf_response(hf_list):
+	# Just incase we found ourselves here with an empty list
+	if len(hf_list) < 1:
+		return "Could not find a nurse with that name"
+	count = 1
+	msg_items = []
+	for hf in hf_list:
+		status = " ".join([str(count) + ".", hf['name']+" -", hf['keph_level_name']])
+		msg_items.append(status)
+		count = count + 1
+	if len(hf_list) == 5:
+		msg_items.append("Find the full list at http://health.the-star.co.ke")
+
+	return "\n".join(msg_items)
+
+
+def construct_nhif_response(nhif_list):
+	# Just incase we found ourselves here with an empty list
+	if len(nhif_list) < 1:
+		return "Could not find a nurse with that name"
+	count = 1
+	msg_items = []
+	for nhif in nhif_list:
+		status = " ".join([str(count) + ".", nhif['name']])
+		msg_items.append(status)
+		count = count + 1
+	if len(nhif_list) == 5:
 		msg_items.append("Find the full list at http://health.the-star.co.ke")
 
 	return "\n".join(msg_items)
